@@ -13,6 +13,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -25,10 +28,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         JwtTokenUtil tokenUtil = new JwtTokenUtil();
         JwtAuthorizationTokenFilter filter = new JwtAuthorizationTokenFilter(customUserDetailsService, tokenUtil);
-        http.addFilterBefore(filter, BasicAuthenticationFilter.class)
+        http.cors().and().addFilterBefore(filter, BasicAuthenticationFilter.class)
                 .csrf().disable()
                 .authorizeRequests()
                 .antMatchers("/api/user/signup").permitAll()
+                .antMatchers("/api/user/list").permitAll()
                 .antMatchers("/api/signin").permitAll()
                 .anyRequest().hasAuthority("ROLE_USER");
     }
@@ -36,6 +40,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", new CorsConfiguration().applyPermitDefaultValues());
+        return source;
     }
 
     @Bean
