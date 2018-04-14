@@ -3,6 +3,8 @@ package darya.markova.photostorage.dto;
 
 public class PhotoDTO {
     String title;
+    String description;
+    Long albumId;
     String url; //сгенерировать url, по которому можно будет непосредственно получить изображение
 
     public String getUrl() {
@@ -26,5 +28,19 @@ public class PhotoDTO {
         this.title = title;
     }
 
+    public String getDescription() {
+        return description;
+    }
 
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Long getAlbumId() {
+        return albumId;
+    }
+
+    public void setAlbumId(Long albumId) {
+        this.albumId = albumId;
+    }
 }

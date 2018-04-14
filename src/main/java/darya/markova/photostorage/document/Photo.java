@@ -8,7 +8,16 @@ import java.util.Date;
 public class Photo {
 
     String ownerLogin;
+    String description;
     Date createDate;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     public Date getCreateDate() {
         return createDate;

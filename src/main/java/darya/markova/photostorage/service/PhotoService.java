@@ -26,13 +26,17 @@ public class PhotoService {
         this.gridFsTemplate = gridFsTemplate;
     }
 
-    public GridFSFile uploadPhotoToAlbum(String login, Long albumId, MultipartFile file) throws IOException {
-        String fileName = file.getName();
-        String uniqueFileName = login + albumId + fileName + System.currentTimeMillis();
+    public GridFSFile uploadPhotoToAlbum(String login,
+                                         Long albumId,
+                                         String description,
+                                         String title,
+                                         MultipartFile file) throws IOException {
+        String uniqueFileName = login + albumId + title + System.currentTimeMillis();
         Photo photo = new Photo();
         photo.setAlbumId(albumId);
-        photo.setTitle(fileName);
+        photo.setTitle(title);
         photo.setOwnerLogin(login);
+        photo.setDescription(description);
         return gridFsTemplate.store(file.getInputStream(), uniqueFileName, file.getContentType(), photo);
     }
 
@@ -43,5 +47,9 @@ public class PhotoService {
 
     public GridFSDBFile getPhotoByFileName(String fileName) {
         return gridFsTemplate.findOne(new Query().addCriteria(Criteria.where("filename").is(fileName)));
+    }
+
+    public void deleteImageFromAlbum(String fileId) {
+        gridFsTemplate.delete(new Query(Criteria.where("_id").is(fileId)));
     }
 }

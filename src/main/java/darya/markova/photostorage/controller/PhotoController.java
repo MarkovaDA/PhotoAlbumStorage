@@ -4,6 +4,7 @@ package darya.markova.photostorage.controller;
 import com.mongodb.gridfs.GridFSFile;
 import com.mongodb.gridfs.GridFSDBFile;
 import darya.markova.photostorage.dto.PhotoDTO;
+import darya.markova.photostorage.dto.ResourceKeyDTO;
 import darya.markova.photostorage.service.PhotoService;
 import darya.markova.photostorage.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,20 +31,28 @@ public class PhotoController {
     UserService userService;
 
     @PostMapping(value = "/upload", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity uploadPhotoToAlbum(@RequestParam("albumId")Long albumId, MultipartFile file) {
+    public ResponseEntity uploadPhotoToAlbum(@RequestParam("albumId")Long albumId,
+                                             @RequestParam("description")String description,
+                                             @RequestParam("title")String title,
+                                             @RequestBody MultipartFile file) {
+        //все эти параметры завернуть в одну сущность
         try {
-            GridFSFile uploadedFile = this.photoService.uploadPhotoToAlbum(userService.getCurrentAuthUser().getLogin(), albumId, file);
-            return new ResponseEntity(HttpStatus.OK);
+            GridFSFile uploadedFile = this.photoService
+                    .uploadPhotoToAlbum(userService.getCurrentAuthUser().getLogin(),
+                            albumId,
+                            title,
+                            description,
+                            file);
+            return new ResponseEntity(new ResourceKeyDTO(uploadedFile.getId().toString()), HttpStatus.OK);
         } catch (IOException e) {
             e.printStackTrace();
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        }//id=5ad1aedac0b6980326afc571
     }
 
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity getAlbumPhotos(@RequestParam("albumId")Long albumId) {
         List<PhotoDTO> images = new ArrayList<>();
-
 
         Iterator<GridFSDBFile> iterator =
                 this.photoService.getPhotosInAlbum(albumId).iterator();
@@ -52,7 +61,7 @@ public class PhotoController {
         String originFileTitle;
         while(iterator.hasNext()) {
             fetchedFile = iterator.next();
-            fileURL = "/api/photo/get?id" + fetchedFile.getFilename();
+            fileURL = "/api/photo/get?id=" + fetchedFile.getId().toString();
             originFileTitle = fetchedFile.getMetaData().get("title").toString();
             images.add(new PhotoDTO(originFileTitle, fileURL));
         }
@@ -61,7 +70,8 @@ public class PhotoController {
 
     @ResponseBody
     @GetMapping(value = "/get")
-    public byte[] getPhoto(@RequestParam("filename")String fileName) throws IOException {
+    public byte[] getPhoto(@RequestParam("id")String fileName) throws IOException {
+        //найти фотографию по идентификатору
         GridFSDBFile photo = photoService.getPhotoByFileName(fileName);
 
         if (photo != null) {
