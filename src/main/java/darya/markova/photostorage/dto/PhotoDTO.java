@@ -1,23 +1,25 @@
 package darya.markova.photostorage.dto;
 
 
+import java.util.Date;
+
 public class PhotoDTO {
+    String id;
     String title;
     String description;
-    Long albumId;
-    String url; //сгенерировать url, по которому можно будет непосредственно получить изображение
+    Date creationDate;
 
-    public String getUrl() {
-        return url;
+    public Date getCreationDate() {
+        return creationDate;
     }
 
-    public PhotoDTO(String title, String url) {
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    public PhotoDTO(String title, String description) {
         this.title = title;
-        this.url = url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
+        this.description = description;
     }
 
     public String getTitle() {
@@ -36,11 +38,11 @@ public class PhotoDTO {
         this.description = description;
     }
 
-    public Long getAlbumId() {
-        return albumId;
+    public String getId() {
+        return id;
     }
 
-    public void setAlbumId(Long albumId) {
-        this.albumId = albumId;
+    public void setId(String id) {
+        this.id = id;
     }
 }

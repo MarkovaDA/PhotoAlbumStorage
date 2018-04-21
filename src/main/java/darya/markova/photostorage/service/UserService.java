@@ -38,10 +38,6 @@ public class UserService {
         return user;
     }
 
-//    public User getUserByLogin(String login) {
-//        User user = mongoTemplate.findOne(Query.query(Criteria.where("login").is(login)), User.class);
-//        return user;
-//    }
 
     public void addNewUser(User user) {
         userRepository.save(user);

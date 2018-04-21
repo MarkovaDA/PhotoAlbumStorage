@@ -14,9 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -35,7 +33,7 @@ public class PhotoController {
                                              @RequestParam("description")String description,
                                              @RequestParam("title")String title,
                                              @RequestBody MultipartFile file) {
-        //все эти параметры завернуть в одну сущность
+        //!!!все эти параметры завернуть в одну сущность
         try {
             GridFSFile uploadedFile = this.photoService
                     .uploadPhotoToAlbum(userService.getCurrentAuthUser().getLogin(),
@@ -47,7 +45,7 @@ public class PhotoController {
         } catch (IOException e) {
             e.printStackTrace();
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
-        }//id=5ad1aedac0b6980326afc571
+        }
     }
 
     @GetMapping(value = "/list", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -55,38 +53,43 @@ public class PhotoController {
         List<PhotoDTO> images = new ArrayList<>();
 
         Iterator<GridFSDBFile> iterator =
-                this.photoService.getPhotosInAlbum(albumId).iterator();
+                this.photoService.getUserPhotosInAlbum(albumId, this.userService.getCurrentAuthUser().getLogin()).iterator();
         GridFSDBFile fetchedFile;
-        String fileURL;
-        String originFileTitle;
+        PhotoDTO fetchedPhoto;
+        String imageTitle;
+        Object imageDescription;
         while(iterator.hasNext()) {
             fetchedFile = iterator.next();
-            fileURL = "/api/photo/get?id=" + fetchedFile.getId().toString();
-            originFileTitle = fetchedFile.getMetaData().get("title").toString();
-            images.add(new PhotoDTO(originFileTitle, fileURL));
+            imageTitle = fetchedFile.getMetaData().get("title").toString();
+            imageDescription = fetchedFile.getMetaData().get("description");
+            if (imageDescription != null) {
+                fetchedPhoto = new PhotoDTO(imageTitle, imageDescription.toString());
+            } else {
+                fetchedPhoto = new PhotoDTO(imageTitle, "");
+            }
+            fetchedPhoto.setId(fetchedFile.getId().toString());
+            fetchedPhoto.setCreationDate(fetchedFile.getUploadDate());
+            images.add(fetchedPhoto);
         }
         return new ResponseEntity(images, HttpStatus.OK);
     }
 
     @ResponseBody
-    @GetMapping(value = "/get")
-    public byte[] getPhoto(@RequestParam("id")String fileName) throws IOException {
-        //найти фотографию по идентификатору
-        GridFSDBFile photo = photoService.getPhotoByFileName(fileName);
-
+    @GetMapping(value = "/get") //отладить этот метод
+    public byte[] getPhoto(@RequestParam("id")String fileId) throws IOException {
+        //id=5ad1aedac0b6980326afc571
+        GridFSDBFile photo = photoService.getImageById(fileId);
+        //проверить,что данная фотография принадлежит текущему юзеру
         if (photo != null) {
-            InputStream in = photo.getInputStream();
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int nRead;
-            int length = (int)photo.getLength();
-            byte[] data = new byte[length];
-            while ((nRead = in.read(data, 0, data.length)) != -1) {
-                buffer.write(data, 0, nRead);
-            }
-            buffer.flush();
-            byte[] imagenEnBytes = buffer.toByteArray();
-            return imagenEnBytes;
+            return photoService.getPhotoBytes(photo);
         }
         return null;
+    }
+
+    @PostMapping(value="/delete", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity deletePhotos(@RequestBody List<String> ids) {
+        photoService.deleteImage(ids);
+        return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 }

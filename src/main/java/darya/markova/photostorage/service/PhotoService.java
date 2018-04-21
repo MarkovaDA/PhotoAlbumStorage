@@ -10,7 +10,10 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 
@@ -28,8 +31,8 @@ public class PhotoService {
 
     public GridFSFile uploadPhotoToAlbum(String login,
                                          Long albumId,
-                                         String description,
                                          String title,
+                                         String description,
                                          MultipartFile file) throws IOException {
         String uniqueFileName = login + albumId + title + System.currentTimeMillis();
         Photo photo = new Photo();
@@ -41,15 +44,31 @@ public class PhotoService {
     }
 
     //список фотографий альбома
-    public List<GridFSDBFile> getPhotosInAlbum(Long albumId) {
-        return gridFsTemplate.find(new Query(Criteria.where("albumId").is(albumId)));
+    public List<GridFSDBFile> getUserPhotosInAlbum(Long albumId, String ownerLogin) {
+        return gridFsTemplate.find(new Query(Criteria.where("metadata.albumId").is(albumId)
+                .andOperator(Criteria.where("metadata.ownerLogin").is(ownerLogin))));
     }
 
-    public GridFSDBFile getPhotoByFileName(String fileName) {
-        return gridFsTemplate.findOne(new Query().addCriteria(Criteria.where("filename").is(fileName)));
+    public GridFSDBFile getImageById(String fileId) {
+        return gridFsTemplate.findOne(new Query().addCriteria(Criteria.where("_id").is(fileId)));
     }
 
-    public void deleteImageFromAlbum(String fileId) {
-        gridFsTemplate.delete(new Query(Criteria.where("_id").is(fileId)));
+    public void deleteImage(List<String> ids) {
+       gridFsTemplate.delete(new Query(Criteria.where("_id").in(ids)));
+        //gridFsTemplate.delete(new Query(Criteria.where("_id").is(fileId)));
+    }
+
+    public byte[] getPhotoBytes(GridFSDBFile file) throws IOException {
+        InputStream in = file.getInputStream();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        int length = (int)file.getLength();
+        byte[] data = new byte[length];
+        while ((nRead = in.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        buffer.flush();
+        byte[] fileBytes = buffer.toByteArray();
+        return fileBytes;
     }
 }
